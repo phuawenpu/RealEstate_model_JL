@@ -1,8 +1,8 @@
-module Load_Data
+module Load_Income
 
 using DelimitedFiles, DataFrames
 
-function load_data(filename)
+function load_income(filename)
     #load income data in deciles and extrapolate lower and upper bounds 
     mat, head = readdlm(filename, ',', Int32, header=true)
     df = DataFrame(mat, vec(head))
@@ -31,6 +31,6 @@ function load_data(filename)
     return select(df, Not([:"1st", :"2nd", :"3rd", :"4th", :"5th", :"6th", :"7th", :"8th", :"9th", :"10th"]))
 end
 
-export load_data
+export load_income
 
 end #end module
