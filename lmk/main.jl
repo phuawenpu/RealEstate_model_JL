@@ -1,13 +1,11 @@
 include("./Initialise_Agents.jl")
+include("./Initialise_Houses.jl")
 
 sim_Agents = Initialise_Agents.Agent[]
 sim_Agents = Initialise_Agents.populate_agents("income.csv",23) #load income data at the 23rd row of csv file
-#= this will be a unit test to see if last 10 agents are initialised properly
-for i in eachindex(sim_Agents)
-    if(i > (size(sim_Agents)[1]-10))
-        display(sim_Agents[i])
-    end
-end =#
+
+sim_Houses = Initialise_Houses.House[]
+sim_Houses = Initialise_Houses.init_prices(sim_Agents, 1.1)
 
 #housing price function:
 function house_price(income ,income_low, base_price, price_coeff)
