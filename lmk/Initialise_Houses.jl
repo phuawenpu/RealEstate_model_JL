@@ -10,10 +10,17 @@ struct House #each unit of property in the simulation)
     price_current :: Int32
 end
 
-#create the housing market size with some buffer for growth
-#sim_marketsize = round(Int32, sim_agent_population * 1.1) #note the multiplier must lead to a multiple of 0.1 e.g. 1.2, 1.3...
 
-function init_prices(agent_input, enlarged)
+function init_prices(agent_input, buffer)
+    house_list = House[]
+    #create the housing market size with some buffer for growth
+    sim_marketsize = round(Int32, buffer) #note the multiplier must lead to a multiple of 0.1 e.g. 1.2, 1.3...
+    agent_size = size(agent_list[1])
+    buffer_size = sim_marketsize - agent_size
+    
+    for i in 1:sim_marketsize
+
+
 
 end
 

@@ -1,8 +1,7 @@
 module Initialise_Agents
 include("./Load_Income.jl")
 # using DataFrames #if using nrow()
-# percent of total number of households being simulated
-percent_agent = 1
+
 
 struct Agent #each household is the agent of the simulation
     income_other :: Int32
@@ -12,8 +11,8 @@ struct Agent #each household is the agent of the simulation
     total_debt :: Int32
 end
 
-function populate_agents(input_filename, row_number)
-    #need to indent this function nicely
+function populate_agents(input_filename, row_number;percent_agent = 1)
+    # percent of total number of households being simulated
     #load income deciles into a dataframe
     df = Load_Income.load_income(input_filename)
     Main.VSCodeServer.vscodedisplay(df)
