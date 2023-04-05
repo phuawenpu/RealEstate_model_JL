@@ -15,7 +15,7 @@ function populate_agents(input_filename, row_number;percent_agent = 1)
     # percent of total number of households being simulated
     #load income deciles into a dataframe
     df = Load_Income.load_income(input_filename)
-    Main.VSCodeServer.vscodedisplay(df)
+    # Main.VSCodeServer.vscodedisplay(df)
     num_households = df[row_number,:"Number_Households"]
     println("Number of Households: ", num_households)
     sim_samplesize = round(Int32, ceil(percent_agent/100 * num_households)/10)
@@ -91,7 +91,10 @@ function populate_agents(input_filename, row_number;percent_agent = 1)
         end
     end
     =#
-    return agent_list
+
+    income_low = df[row_number,:"min_income"]
+    income_hi = df[row_number,:"max_income"]
+    return agent_list, income_low, income_hi
 end
 
 export Agent, populate_agents
