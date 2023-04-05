@@ -15,3 +15,9 @@ println("Agent[1] and House[1] are")
 display(sim_Agents[1])
 display(sim_Houses[1])
 
+#each agent represents a single household
+#behaviour of all agents is to start to bid for rental or purchase
+#rental is payable only with savings and income
+#purchase is payable with above as well as mortgage
+
+

@@ -10,14 +10,13 @@ struct House #each unit of property in the simulation)
     price_current :: Int32
 end
 
-function house_price(income ,income_low, base_price, price_coeff)
-    #base_price = 50000
-    #price_coeff = 0.0005
-    price = (income / income_low) * income * base_price * price_coeff
+function house_price(income ,income_low, base_unitprice, price_coeff)
+    price = (income / income_low) * income * base_unitprice * price_coeff
+    #this pricing formula can be improved, so the prices are an exponential function relative to income
     return Int64(round(price))
 end
 
-function init_prices(agent_input, buffer, income_low, income_hi,price_coeff, cheapest_unit)
+function init_prices(agent_input, buffer, income_low, income_hi,price_coeff, base_unitprice)
     house_list = House[]
     #create the housing market size with some buffer for growth
     agent_size = size(agent_input)[1]
@@ -29,10 +28,10 @@ function init_prices(agent_input, buffer, income_low, income_hi,price_coeff, che
     println("Income high bound in init_prices: ", income_hi)   
      
     for i in 1:agent_size #first we initialise the house prices based on agent incomes
-        push!(house_list, House(1, 1, 0, house_price(agent_input[i].income_other,income_low, price_coeff,cheapest_unit)))
+        push!(house_list, House(1, 1, 0, house_price(agent_input[i].income_other,income_low, price_coeff,base_unitprice)))
     end
 
-    for i in 1:(sim_marketsize - agent_size)
+    for i in 1:(buffer_size)
         push!(house_list, House(0, 0, 0, 1)) #the parameters indicate an empty buffer House unit
     end
 
