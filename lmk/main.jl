@@ -16,7 +16,6 @@ sim_Houses = Initialise_Houses.init_prices(sim_Agents, 1.1, income_low, income_h
 println("Number of agents is: ", size(sim_Agents)[1])
 println("Number of houses is: ", size(sim_Houses)[1])
 
-
 #each agent represents a single household
 #behaviour of all agents is to start to bid for rental or purchase
 #rental is payable only with savings and income
