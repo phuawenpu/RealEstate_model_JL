@@ -1,15 +1,9 @@
 module Initialise_Agents
+
+include("./Model_DataStructures.jl")
+using .Model_DataStructures
 include("./Load_Income.jl")
-# using DataFrames #if using nrow()
-
-
-struct Agent #each household is the agent of the simulation
-    income_other :: Int32
-    income_rental :: Int32
-    primary_residence :: Int32 #index to House[] array, if 1(state landlord) is homeless
-    properties :: Vector{Int32} #which house ids does this agent own 1 is initial state
-    total_debt :: Int32
-end
+# using DataFrames #if using nrow()p
 
 function populate_agents(input_filename, row_number;percent_agent = 1)
     # percent of total number of households being simulated
