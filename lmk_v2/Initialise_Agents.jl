@@ -98,6 +98,19 @@ function savings_agents(agent_list; savings_lo, savings_hi)
     end
 end
 
-export populate_agents, savings_agents
+function expenditure_agents(agent_list)
+    a_size = size(agent_list)[1]
+    for i in 1:a_size
+        saving = agent_list[i] - agent_list[a_size + i]
+        if saving < 0 
+            agent_list[2* a_size + i] = 0
+        else
+            agent_list[2* a_size + i] = saving
+        end
+        
+    end
+end
+
+export populate_agents, savings_agents, expenditure_agents
 
 end #end module
