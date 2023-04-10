@@ -84,10 +84,8 @@ function populate_agents(df, row_number, agent_list)
         index += 1
     end
 
-
-
     return nothing
-end
+end #end populate_agent
 
 
 function savings_agents(agent_list; savings_lo, savings_hi)
@@ -98,7 +96,7 @@ function savings_agents(agent_list; savings_lo, savings_hi)
         agent_list[a_size + i]= Int32(round(rand(savings_lo:savings_hi)/100 * agent_list[a_size]))
         
     end
-end
+end #end savings_agents
 
 function expenditure_agents(agent_list)
     # given the household income and savings amount
@@ -113,14 +111,20 @@ function expenditure_agents(agent_list)
         end
         
     end
-end
+end #end expenditure_agents
 
-function price_house_list(income_df, row_number, agent_list,house_list, base_price, price_coeff)
+function house_list_price_from_income(income_df, row_number, agent_list,house_list, base_price, price_coeff)
+    #house price is made a function of income
     for i in 1:size(house_list)[1]
         house_list[i] = Model_Functions.house_price(agent_list[i],income_df[row_number,:"min_income"],base_price, price_coeff)
     end
+end #end house_list_price_from_income
+
+function house_list_rental(house_list, interest_rate, inflation_rate)
+house_list .= Model_Functions.rental_monthly(house_list, interest_rate, inflation_rate)
+
 end
 
-export populate_agents, savings_agents, expenditure_agents, price_house_list
+export populate_agents, savings_agents, expenditure_agents, house_list_price_from_income
 
 end #end module

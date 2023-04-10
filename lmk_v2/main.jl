@@ -1,7 +1,9 @@
 include("./Load_Income.jl")
 include("./Initialise_Agents.jl")
 
-
+#inflation and mortgage interest in %
+inflation_rate = 5.5
+interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 
@@ -21,9 +23,14 @@ display(agent_list)
 
 house_list = zeros(Int32,num_households)
 
-Initialise_Agents.price_house_list(income_df, row_number, agent_list, house_list,60000, 0.0005) #base price of house and price_coeff
+Initialise_Agents.house_list_price_from_income(income_df, row_number, agent_list, house_list,60000, 0.0005) #base price of house and price_coeff
+Initialise_Agents.house_list_rental(house_list, interest_rate, inflation_rate)
+
+
 #sort the houses_list from lowest to highest price
 sort!(house_list) #, dims = 1)
+
+
 
 display(house_list)
 

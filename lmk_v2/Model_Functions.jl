@@ -40,6 +40,14 @@ function mortgage_monthly(;r, P, N)
 end
 
 
-export house_price, rent_price_probability, mortgage_monthly
+# rent price estimator is based on mortgage
+function rental_monthly(house_price, interest_rate, inflation_rate)
+    # rental is simply an assumed 30 year term mortgage + inflation
+    rental = mortgage_monthly(r=interest_rate, P = house_price, N=(12*30)) * (1+inflation_rate/100)
+    return Int64(round(rental))
+end
+
+
+export house_price, rent_price_probability, mortgage_monthly, rental_monthly
 
 end #end module
