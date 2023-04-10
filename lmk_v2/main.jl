@@ -1,5 +1,3 @@
-using DataFrames
-
 include("./Load_Income.jl")
 include("./Initialise_Agents.jl")
 
@@ -23,12 +21,7 @@ display(agent_list)
 
 house_list = zeros(Int32,num_households)
 
-for i in 1:size(agent_list)[1]
-    house_list[i] = Model_Functions.house_price(agent_list[i],income_df[row_number,:"min_income"],60000, 0.0005)
-end
-
-
-
+Initialise_Agents.price_house_list(income_df, row_number, agent_list, house_list,60000, 0.0005) #base price of house and price_coeff
 #sort the houses_list from lowest to highest price
 sort!(house_list) #, dims = 1)
 

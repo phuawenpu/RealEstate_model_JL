@@ -115,9 +115,9 @@ function expenditure_agents(agent_list)
     end
 end
 
-function price_house_list(house_list)
+function price_house_list(income_df, row_number, agent_list,house_list, base_price, price_coeff)
     for i in 1:size(house_list)[1]
-        house_list[i] = Model_Functions.house_price(agent_list[i],income_df[row_number,:"min_income"],60000, 0.0005)
+        house_list[i] = Model_Functions.house_price(agent_list[i],income_df[row_number,:"min_income"],base_price, price_coeff)
     end
 end
 
