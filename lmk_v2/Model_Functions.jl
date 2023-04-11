@@ -18,8 +18,8 @@ function rent_price_probability(;budget, price, spread)
     L = Normal(budget,spread)
     p_fit = Float32(pdf(L, budget))
     rent_probability = Float32(pdf(L, price) / p_fit)
-    println(rent_probability)
-    cutoff = 0.005
+    # println(rent_probability)
+    cutoff = 0.01
     if rent_probability <= cutoff
         return Float32(0)
     else return rent_probability

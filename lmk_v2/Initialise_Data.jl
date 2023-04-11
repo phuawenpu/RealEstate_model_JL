@@ -1,4 +1,4 @@
-module Initialise_Agents
+module Initialise_Data
 
 using DataFrames
 include("./Model_Functions.jl")
@@ -9,7 +9,7 @@ function populate_agents(df, row_number, agent_list)
     # step through the decile of income in the population, 
     # generate each individual agent's household income based
     # on the range within the decile
-    Main.VSCodeServer.vscodedisplay(df)
+    # Main.VSCodeServer.vscodedisplay(df)
     sim_samplesize = Int32(round(size(agent_list)[1]/10))
        
     index = 1
@@ -100,7 +100,7 @@ function savings_agents(agent_list; savings_lo, savings_hi)
     end
 end #end savings_agents
 
-function expenditure_agents(agent_list)
+function expenditure_agents(agent_list; housing_lo, housing_hi)
     # given the household income and savings amount
     # work out the household expenditure
     a_size = size(agent_list)[1]
@@ -108,8 +108,10 @@ function expenditure_agents(agent_list)
         savings = agent_list[a_size + i]
         if savings < 0 
             agent_list[2a_size + i] = 0
+            agent_list[3a_size + i] = 0
         else
-            agent_list[2a_size + i] = agent_list[i] - agent_list[a_size + i] 
+            expenditure = agent_list[2a_size + i] = agent_list[i] - agent_list[a_size + i]
+            agent_list[3a_size + i] = Int32(round(rand(housing_lo:housing_hi)/100 * expenditure))
         end
         
     end
@@ -126,6 +128,7 @@ function house_list_rental(house_list, interest_rate, inflation_rate, max_house_
     h_size = size(house_list)[1]
     for i in 1: h_size
         house_list[h_size+i] =  Model_Functions.rental_monthly(house_list[i], interest_rate, inflation_rate, max_house_price, rent_coeff)
+        house_list[2h_size+i] = 0
     end
 end #end house_list_rental
 
