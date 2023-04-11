@@ -11,7 +11,7 @@ function house_price(income ,income_low, base_unitprice, price_coeff)
 end
 
 #probability that a house will be rented based on budget
-function rent_price_probability(budget, price, spread)
+function rent_price_probability(;budget, price, spread)
     # using a normal distribution to approximate consumer behaviour
     # however the hunch is consumer behaviour is more like a skewed distribution
     # i.e. given the same distance from central price, greater preference for low prices than high prices
@@ -41,9 +41,15 @@ end
 
 
 # rent price estimator is based on mortgage
-function rental_monthly(house_price, interest_rate, inflation_rate)
+function rental_monthly(house_price, interest_rate, inflation_rate, max_house_price, rent_coeff)
+    multiplier = max_house_price / house_price * rent_coeff
+    # println("Multiplier: ",multiplier)
+    if multiplier < 1
+        multiplier = 1
+    end
     # rental is simply an assumed 30 year term mortgage + inflation
-    rental = mortgage_monthly(r=interest_rate, P = house_price, N=(12*30)) * (1+inflation_rate/100)
+    rental = mortgage_monthly(r=interest_rate, P = house_price, N=(12*30)) * (1+inflation_rate/100) * multiplier
+    println(house_price, " rental is: ", Int32(round(rental)))
     return Int64(round(rental))
 end
 
