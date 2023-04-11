@@ -21,14 +21,14 @@ Initialise_Agents.savings_agents(agent_list; savings_lo = 25, savings_hi = 42)
 Initialise_Agents.expenditure_agents(agent_list)
 display(agent_list)
 
-house_list = zeros(Int32,num_households)
-
-Initialise_Agents.house_list_price_from_income(income_df, row_number, agent_list, house_list,60000, 0.0005) #base price of house and price_coeff
+house_list = zeros(Int32,num_households,2)
+#base price of house $60000 and price_coeff 0.0005
+Initialise_Agents.house_list_price_from_income(income_df, row_number, agent_list, house_list,60000, 0.0005) 
 Initialise_Agents.house_list_rental(house_list, interest_rate, inflation_rate)
 
 
 #sort the houses_list from lowest to highest price
-sort!(house_list) #, dims = 1)
+sort!(house_list, dims = 1)
 
 
 
