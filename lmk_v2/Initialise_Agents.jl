@@ -9,7 +9,7 @@ function populate_agents(df, row_number, agent_list)
     # step through the decile of income in the population, 
     # generate each individual agent's household income based
     # on the range within the decile
-    # Main.VSCodeServer.vscodedisplay(df)
+    Main.VSCodeServer.vscodedisplay(df)
     sim_samplesize = Int32(round(size(agent_list)[1]/10))
        
     index = 1
@@ -92,8 +92,11 @@ function savings_agents(agent_list; savings_lo, savings_hi)
     # to give a corresponding vector of savings
     a_size = size(agent_list)[1]
     for i in 1:a_size
-        agent_list[a_size + i]= Int32(round(rand(savings_lo:savings_hi)/100 * agent_list[a_size]))
-        
+        income = agent_list[i]
+        # println("Income in savings_agent: ", income)
+        savings = Int32(round(rand(savings_lo:savings_hi)/100 * income))
+        # println("Savings :", savings)
+        agent_list[a_size + i]= savings
     end
 end #end savings_agents
 
@@ -102,11 +105,11 @@ function expenditure_agents(agent_list)
     # work out the household expenditure
     a_size = size(agent_list)[1]
     for i in 1:a_size
-        saving = agent_list[i] - agent_list[a_size + i]
-        if saving < 0 
-            agent_list[2* a_size + i] = 0
+        savings = agent_list[a_size + i]
+        if savings < 0 
+            agent_list[2a_size + i] = 0
         else
-            agent_list[2* a_size + i] = saving
+            agent_list[2a_size + i] = agent_list[i] - agent_list[a_size + i] 
         end
         
     end
@@ -122,7 +125,7 @@ end #end house_list_price_from_income
 function house_list_rental(house_list, interest_rate, inflation_rate, max_house_price, rent_coeff)
     h_size = size(house_list)[1]
     for i in 1: h_size
-        house_list[h_size+i] = Model_Functions.rental_monthly(house_list[i], interest_rate, inflation_rate, max_house_price, rent_coeff)
+        house_list[h_size+i] =  Model_Functions.rental_monthly(house_list[i], interest_rate, inflation_rate, max_house_price, rent_coeff)
     end
 end #end house_list_rental
 

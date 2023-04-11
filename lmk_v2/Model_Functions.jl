@@ -49,7 +49,7 @@ function rental_monthly(house_price, interest_rate, inflation_rate, max_house_pr
     end
     # rental is simply an assumed 30 year term mortgage + inflation
     rental = mortgage_monthly(r=interest_rate, P = house_price, N=(12*30)) * (1+inflation_rate/100) * multiplier
-    println(house_price, " rental is: ", Int32(round(rental)))
+    # println(house_price, " rental is: ", Int32(round(rental)))
     return Int64(round(rental))
 end
 

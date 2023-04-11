@@ -1,4 +1,4 @@
-#using Plots
+using Plots
 include("./Load_Income.jl")
 include("./Initialise_Agents.jl")
 
@@ -28,16 +28,25 @@ display(agent_list)
 
 house_list = zeros(Int32,num_households,3)
 #base price of house $60000 and price_coeff 0.009
-Initialise_Agents.house_list_price_from_income(income_df, row_number, agent_list, house_list,60000, 0.0008) 
+Initialise_Agents.house_list_price_from_income(income_df, row_number, agent_list, house_list,50000, 0.0008) 
 #sort the houses_list from lowest to highest price
 sort!(house_list, dims = 1)
 h_size = size(house_list)[1]
 max_house_price = house_list[h_size]
 Initialise_Agents.house_list_rental(house_list, interest_rate, inflation_rate, max_house_price, rent_coeff)
+display(house_list)
+
+a_size = size(agent_list)[1]
+x = collect(1:a_size)
+display(agent_list)
+y2 = house_list[1,:,1]
+display(house_list)
+plot(x, [y1 y2 y3], layout=(3,1), label=["income" "house_price" "rent_price"])
 
 
-
-house_list[h_size]
+plot(x, [y1], label="income")
+plot(x, [y2], label="rental")
+agent_list[55]
 
 
 
