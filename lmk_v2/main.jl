@@ -1,6 +1,6 @@
 #using Plots
 
-const N_sim_loop = Int32((30*12)/3) #30 years in periods of 3 months
+const N_sim_loop = Int32((30*12)/3) #30 years, each timestep = 3 months
 #inflation and mortgage interest in %
 const inflation_rate = 5.5
 const interest_rate = 4.7
@@ -85,5 +85,15 @@ display(house_list)
 plot(x, [y1 y2], layout=(2,1), label=["housing_expenditure" "rental_ask"])
 
 
+N = 2^20
+
+x_d = CUDA.rand(N)  # a vector stored on the GPU filled with 1.0 (Float32)
+y_d = CUDA.rand(N)  # a vector stored on the GPU filled with 2.0
+z_d = CUDA.zeros(N)
+
+
+numblocks = ceil(Int, N/256)
+
+@sync @cuda threads=256 blocks=numblocks probability(z_d, x_d, y_d)
 
 

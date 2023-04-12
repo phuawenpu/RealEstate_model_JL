@@ -1,22 +1,31 @@
-using CUDA, Test
+using CUDA, Distributions, BenchmarkTools
+include("./Model_Functions.jl"); using .Model_Functions;
+N = 2^20
 
-N = 2^10
-x_d = CUDA.fill(1.0f0, N)  # a vector stored on the GPU filled with 1.0 (Float32)
-y_d = CUDA.fill(2.0f0, N)  # a vector stored on the GPU filled with 2.0
+x_d = CUDA.rand(N)  # a vector stored on the GPU filled with 1.0 (Float32)
+y_d = CUDA.rand(N)  # a vector stored on the GPU filled with 2.0
+z_d = CUDA.zeros(N)
 
-# y_d .+= x_d
-# @test all(Array(y_d) .== 3.0f0)
-
-
-function gpu_add1!(y, x)
-    for i = 1:length(y)
-        @inbounds y[i] += x[i]
+function rent_probability_GPU(result, budget, price)
+   
+    index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    stride = gridDim().x * blockDim().x
+    for i = index:stride:length(budget)
+        @inbounds spread = 0.25 * budget[i]
+        @inbounds  L = Normal(budget[i],spread)
+        @inbounds p_fit = Float32(pdf(L, budget[i]))
+        @inbounds result[i] = Float32(pdf(L, price[i]) / p_fit)
     end
-    return nothing
+    
 end
 
-fill!(y_d, 2)
-@cuda gpu_add1!(y_d, x_d)
-@test all(Array(y_d) .== 3.0f0)
+numblocks = ceil(Int, N/256)
 
-display(y_d)
+@sync @cuda threads=256 blocks=numblocks probability(z_d, x_d, y_d)
+
+display(z_d)
+i = rand(1:length(z_d))
+x_d[i]
+y_d[i]
+println("gpu answer is: ", z_d[i])
+rent_price_probability(budget = x_d[i], price = y_d[i], spread = x_d[i]*0.25)

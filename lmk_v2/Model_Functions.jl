@@ -1,7 +1,7 @@
 #this is where all the prices, mortgages, rents etc.. are determined
 module Model_Functions
 
-using Distributions
+using CUDA, Distributions
 
 #price houses based on input household monthly income
 function house_price(income ,income_low, base_unitprice, price_coeff)
@@ -10,8 +10,8 @@ function house_price(income ,income_low, base_unitprice, price_coeff)
     return Int64(round(price))
 end
 
-#probability that a house will be rented based on budget
-function rent_price_probability(;budget, price, spread)
+#= probability that a house will be rented based on budget this is for CPU
+function rent_probability_CPU(;budget, price, spread)
     # using a normal distribution to approximate consumer behaviour
     # however the hunch is consumer behaviour is more like a skewed distribution
     # i.e. given the same distance from central price, greater preference for low prices than high prices
@@ -19,12 +19,26 @@ function rent_price_probability(;budget, price, spread)
     p_fit = Float32(pdf(L, budget))
     rent_probability = Float32(pdf(L, price) / p_fit)
     # println(rent_probability)
-    cutoff = 0.01
+    cutoff = 0
     if rent_probability <= cutoff
         return Float32(0)
     else return rent_probability
     end
+end =#
+
+function rent_probability_GPU(result, budget, price)
+   
+    index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    stride = gridDim().x * blockDim().x
+    for i = index:stride:length(budget)
+        @inbounds spread = 0.25 * budget[i]
+        @inbounds  L = Normal(budget[i],spread)
+        @inbounds p_fit = Float32(pdf(L, budget[i]))
+        @inbounds result[i] = Float32(pdf(L, price[i]) / p_fit)
+    end
+    
 end
+
 
 #monthly mortgage payment given ANNUAL % interest rate, principal owed, 
 # term i.e. number of repayment months
@@ -54,6 +68,6 @@ function rental_monthly(house_price, interest_rate, inflation_rate, max_house_pr
 end
 
 
-export house_price, rent_price_probability, mortgage_monthly, rental_monthly
+export house_price, rent_probability_GPU, mortgage_monthly, rental_monthly
 
 end #end module
