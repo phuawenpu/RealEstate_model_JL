@@ -10,7 +10,7 @@ function populate_agents(df, row_number, agent_list)
     # generate each individual agent's household income based
     # on the range within the decile
     # Main.VSCodeServer.vscodedisplay(df)
-    sim_samplesize = Int32(round(size(agent_list)[1]/10))
+    sim_samplesize = Int32(round(size(agent_list)[1]/8))
        
     index = 1
 
@@ -124,10 +124,10 @@ function house_list_price_from_income(income_df, row_number, agent_list,house_li
     end
 end #end house_list_price_from_income
 
-function house_list_rental(house_list, interest_rate, inflation_rate, rent_coeff)
+function house_list_rental(house_list, interest_rate, inflation_rate, rent_coeff, max_house_price)
     h_size = size(house_list)[1]
     for i in 1: h_size
-        house_list[h_size+i] =  Model_Functions.rental_monthly(house_list[i], interest_rate, inflation_rate, rent_coeff)
+        house_list[h_size+i] =  Model_Functions.rental_monthly(house_list[i], interest_rate, inflation_rate, rent_coeff, max_house_price)
         house_list[2h_size+i] = 0
     end
 end #end house_list_rental
