@@ -7,7 +7,7 @@ interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 # ratio of the entire state's population to model
-pop_ratio = 0.005 
+pop_ratio = 0.00005 
 #corrector for rents
 rent_coeff = 0.89
 #base unit price of house
@@ -42,7 +42,7 @@ include("./Model_Functions.jl")
 
 income_df = Load_Income.load_income("./income.csv")
 num_households = income_df[row_number,:"Number_Households"]
-println("Total Number of Households in this demographic: ", num_households)
+println("Total Number of Households in this dataframe row: ", num_households)
 println("We try to simulate ",pop_ratio*100, "% of them")
 num_households =Int32(round((pop_ratio*num_households)/8)*8)
 println("Actual number of households simulated: ",num_households)
@@ -92,18 +92,23 @@ heatmap(z)
 # "static" initialisation above
 # dynamic evaluation of the sim loop
 
-N = length(agent_budgets)
+#CUDA doesn't give the right result ?
+N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
 x_d = CUDA.CuArray(house_rentals)
 y_d = CUDA.CuArray(agent_budgets)
-z_d = CUDA.zeros(Float16,N) #vector to store range of probabilities given budget to consider
+z_d = CUDA.zeros(Float16,(N,N)) #vector to store range of probabilities given budget to consider
 
 numblocks = ceil(Int, N/256)
-@sync for i in 1:N #loop through each agent budget
-    @async @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, x_d, y_d[i],rent_spread)
-end
+
+@cuda blocks=numblocks Model_Functions.rent_probability_GPU(z_d, x_d, y_d,rent_spread)
+
 z_d
 
+z2 = Array(z_d)
+heatmap(z2)
 display(z_d)
+
+
 i = rand(1:length(x_d))
 x_d[i]
 y_d[i]

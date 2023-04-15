@@ -12,15 +12,19 @@ end
 
 #custom kernel function for price-budget probabilities
 function rent_probability_GPU(result, budget, price, price_spread)
-    #price is a scalar quantity!
-    index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    stride = gridDim().x * blockDim().x
-    for i = index:stride:length(budget)
-        @inbounds spread = price_spread * budget[i]
-        @inbounds  L = Normal(budget[i],spread)
-        @inbounds p_fit = Float32(pdf(L, budget[i]))
-        @inbounds result[i] = Float32(pdf(L, price) / p_fit)
+    index_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    stride_x = gridDim().x * blockDim().x
+
+    for j = index_x:stride_x:size(result)[2]
+        for i = index_x:stride_x:size(result)[1]
+            @inbounds spread = price_spread * budget[i]
+            @inbounds L = Normal(budget[i],spread)
+            @inbounds p_fit = Float32(pdf(L, budget[i]))
+            @inbounds result[i,j] = Float32(pdf(L, price[i]) / p_fit)
+        end
     end
+    
+    return
 end
 
 
