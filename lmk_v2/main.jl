@@ -7,7 +7,7 @@ interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 # ratio of the entire state's population to model
-pop_ratio = 0.00005 
+pop_ratio = 0.00004 
 #corrector for rents
 rent_coeff = 0.89
 #base unit price of house
@@ -79,20 +79,23 @@ x = collect(1:a_size);
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
 house_rentals = house_list[:,2] #this gives us the house rental prices
 # run plot only for small number of households (e.g. < 1000)
-#plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"])
+(length(house_rentals)<1025 && length(agent_budgets)<1025) ? plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"], reuse=false) : nothing
+# "static" initialisation above
 
-z = zeros(length(agent_budgets), length(house_rentals))
-for i in eachindex(house_rentals)
+z = zeros(length(house_rentals))
+for i in eachindex(agent_budgets)
     for j in eachindex(agent_budgets)
-        z[i,j] = Model_Functions.rent_probability_CPU(agent_budgets[j],house_rentals[i], 0.2)
+        z[i,j] = Model_Functions.rent_probability_CPU(agent_budgets[j],house_rentals[i], rent_spread)
     end
 end
-heatmap(z)
+(length(house_rentals) < 1025) ? heatmap(z, reuse=false) : nothing
 
-# "static" initialisation above
+
+
+
 # dynamic evaluation of the sim loop
 
-#CUDA doesn't give the right result ?
+
 N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
 x_d = CUDA.CuArray(house_rentals)
 y_d = CUDA.CuArray(agent_budgets)
