@@ -6,7 +6,7 @@ using CUDA, Distributions
 #price houses based on input household monthly income
 function house_price(income ,income_low, base_unitprice, price_coeff)
     #this pricing formula can be improved, so the prices are an exponential function relative to income
-    price = rand(0.95:1.05) * (income / income_low) * income * base_unitprice * price_coeff
+    price = rand(0.97:1.03) * (income / income_low) * income * base_unitprice * price_coeff
     return Int64(round(price))
 end
 
@@ -29,6 +29,18 @@ end
 
 
 #cpu version for results TESTING purposes only
+function rent_probability_CPU_v1(budget, price, budget_spread)
+    # all inputs are scalar
+    # using a normal distribution to approximate consumer behaviour
+    # however the hunch is consumer behaviour is more like a skewed distribution
+    # i.e. given the same distance from central price, greater preference for low prices than high prices
+    L = Normal(budget,budget_spread*budget)
+    p_fit = Float32(pdf(L, budget))
+    rent_probability = Float32(pdf(L, price) / p_fit)
+    return Float16(rent_probability)
+end 
+
+#cpu version 
 function rent_probability_CPU(budget, price, budget_spread)
     # all inputs are scalar
     # using a normal distribution to approximate consumer behaviour
@@ -39,6 +51,8 @@ function rent_probability_CPU(budget, price, budget_spread)
     rent_probability = Float32(pdf(L, price) / p_fit)
     return Float16(rent_probability)
 end 
+
+
 
 
 #monthly mortgage payment given ANNUAL % interest rate, principal owed, 
@@ -58,10 +72,10 @@ end
 # rent price estimator is based on mortgage
 function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, max_house_price)
     # rental is simply an assumed 30 year term mortgage + inflation
-    house_price_ratio = max_house_price / house_price
+    house_price_ratio = max_house_price / (house_price * rent_coeff)
     tenure_corrected = Int32(round((12*30)-house_price_ratio)+1)
-    if house_price_ratio < 20 tenure_corrected = tenure_corrected+Int32(round(house_price_ratio*15)) end
-    rental = mortgage_monthly(r=interest_rate, P = house_price, N=tenure_corrected) * (1+inflation_rate/100) * rent_coeff
+    println("tenure_corrected: ",tenure_corrected, " for house price: ", house_price)
+    rental = mortgage_monthly(r=interest_rate, P = house_price, N=tenure_corrected) * (1+inflation_rate/100)
     # println(house_price, " rental is: ", Int32(round(rental)))
     return Int64(round(rental))
 end

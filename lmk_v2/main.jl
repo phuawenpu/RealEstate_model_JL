@@ -9,11 +9,11 @@ row_number = 23
 # ratio of the entire state's population to model
 pop_ratio = 0.00004 
 #corrector for rents
-rent_coeff = 0.89
+rent_coeff = 0.5
 #base unit price of house
-base_unit_price = 65000
+base_unit_price = 40000
 #coefficient for house prices
-price_coeff =0.0005
+price_coeff =0.000003
 #spread in rental acceptance probabilityusing Plots
 
 N_sim_loop = Int32((30*12)/3) #30 years, each timestep = 3 months
@@ -25,15 +25,15 @@ row_number = 23
 # ratio of the entire state's population to model
 pop_ratio = 0.00004 #just 0.004%
 #corrector for rents
-rent_coeff = 0.4
+rent_coeff = 0.35
 #base unit price of house
 base_unit_price = 65000
 #coefficient for house prices
 price_coeff =0.0005
 #spread ratio in rental probability
-rent_spread = 0.25 # 8% of variance
+const rent_spread = 0.2 # 20% variance
 #CUDA vector size control, memory bound:
-cuda_max_vector = 2^18
+cuda_max_vector = 2^19
 
 include("./Load_Income.jl")
 include("./Initialise_Data.jl")
@@ -69,8 +69,8 @@ max_house_price = house_list[h_size]; println("Max house price: ", max_house_pri
 #rentals initiated here
 Initialise_Data.house_list_rental(house_list, interest_rate, inflation_rate, rent_coeff, max_house_price)
 
-println("display agent_list:")
-println("1:income, 2:savings, 3:expenditure, 4:housing_expenditure, 5:accumulated_savings")
+
+println("agent_list has 5 columns -> 1:income, 2:savings, 3:expenditure, 4:housing_expenditure, 5:accumulated_savings")
 display(agent_list)
 println(" house_list has 3 columns-> 1:house price, 2:rental price, 3:last_rent price:")
 display(house_list)
@@ -82,19 +82,17 @@ house_rentals = house_list[:,2] #this gives us the house rental prices
 (length(house_rentals)<1025 && length(agent_budgets)<1025) ? plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"], reuse=false) : nothing
 # "static" initialisation above
 
-z = zeros(length(house_rentals))
+y = zeros(Float16,length(agent_budgets),length(house_rentals))
 for i in eachindex(agent_budgets)
-    for j in eachindex(agent_budgets)
-        z[i,j] = Model_Functions.rent_probability_CPU(agent_budgets[j],house_rentals[i], rent_spread)
-    end
+    y[i,:] = Model_Functions.rent_probability_CPU.(agent_budgets[i], house_rentals, rent_spread)
 end
-(length(house_rentals) < 1025) ? heatmap(z, reuse=false) : nothing
+z = sortperm(y[4,:], rev=true)
+for i in eachindex(z)
+    println(y[z[i]])
+end
 
-
-
-
-# dynamic evaluation of the sim loop
-
+agent_budgets[4]
+house_rentals[4]
 
 N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
 x_d = CUDA.CuArray(house_rentals)
