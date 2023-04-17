@@ -1,37 +1,20 @@
 using CUDA, Plots
 
-N_sim_loop = Int32((30*12)/3) #30 years, each timestep = 3 months
 #inflation and mortgage interest in %
 inflation_rate = 5.5
 interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 # ratio of the entire state's population to model
-pop_ratio = 0.00004 
+pop_ratio = 0.00005 
 #corrector for rents
-rent_coeff = 0.5
+rent_coeff = 1.7
 #base unit price of house
-base_unit_price = 40000
+base_unit_price = 50000
 #coefficient for house prices
-price_coeff =0.000003
-#spread in rental acceptance probabilityusing Plots
-
-N_sim_loop = Int32((30*12)/3) #30 years, each timestep = 3 months
-#inflation and mortgage interest in %
-inflation_rate = 5.5
-interest_rate = 4.7
-# row number of the income dataframe to load
-row_number = 23
-# ratio of the entire state's population to model
-pop_ratio = 0.00004 #just 0.004%
-#corrector for rents
-rent_coeff = 0.35
-#base unit price of house
-base_unit_price = 65000
-#coefficient for house prices
-price_coeff =0.0005
+price_coeff =0.0002
 #spread ratio in rental probability
-const rent_spread = 0.2 # 20% variance
+rent_spread = 0.2 # 20% variance
 #CUDA vector size control, memory bound:
 cuda_max_vector = 2^19
 
@@ -51,7 +34,7 @@ if num_households >= cuda_max_vector
     return
 end
 #agent_list has 5 columns-> 1:income, 2:savings, 3>:expenditure, 4:housing_expenditure, 5:accumulated_savings
-agent_list = zeros(Int32,num_households,5)
+agent_list = zeros(Int32,num_households,5);
 Initialise_Data.populate_agents(income_df, row_number, agent_list)
 #sort the agent_list from lowest to highest income
 sort!(agent_list, dims = 1)
@@ -69,7 +52,7 @@ max_house_price = house_list[h_size]; println("Max house price: ", max_house_pri
 #rentals initiated here
 Initialise_Data.house_list_rental(house_list, interest_rate, inflation_rate, rent_coeff, max_house_price)
 
-
+println("Initialised values: ")
 println("agent_list has 5 columns -> 1:income, 2:savings, 3:expenditure, 4:housing_expenditure, 5:accumulated_savings")
 display(agent_list)
 println(" house_list has 3 columns-> 1:house price, 2:rental price, 3:last_rent price:")
@@ -79,16 +62,30 @@ x = collect(1:a_size);
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
 house_rentals = house_list[:,2] #this gives us the house rental prices
 # run plot only for small number of households (e.g. < 1000)
-(length(house_rentals)<1025 && length(agent_budgets)<1025) ? plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"], reuse=false) : nothing
-# "static" initialisation above
+(length(house_rentals)<2049 && length(agent_budgets)<1025) ? plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"], reuse=false) : nothing
+########## "static" initialisation above ##########
+
+
+
+agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
+house_rentals = house_list[:,2] #this gives us the house rental prices
+
+#step through each agents' budget, find the highest probability 
+
+probability_cache = zeros(Float16, length(house_rentals))
+probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
+
 
 y = zeros(Float16,length(agent_budgets),length(house_rentals))
 for i in eachindex(agent_budgets)
     y[i,:] = Model_Functions.rent_probability_CPU.(agent_budgets[i], house_rentals, rent_spread)
 end
+
 z = sortperm(y[4,:], rev=true)
+z'
+y
 for i in eachindex(z)
-    println(y[z[i]])
+    println(y[z[i]'])
 end
 
 agent_budgets[4]
