@@ -1,4 +1,4 @@
-using CUDA, Plots
+using CUDA, Plots, BenchmarkTools
 
 #inflation and mortgage interest in %
 inflation_rate = 5.5
@@ -6,7 +6,8 @@ interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 # ratio of the entire state's population to model
-pop_ratio = 0.00005 
+#pop_ratio = 0.00005 
+pop_ratio = 0.05 
 #corrector for rents
 rent_coeff = 1.7
 #base unit price of house
@@ -66,14 +67,14 @@ house_rentals = house_list[:,2] #this gives us the house rental prices
 ########## "static" initialisation above ##########
 
 
-
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
 house_rentals = house_list[:,2] #this gives us the house rental prices
-
 #step through each agents' budget, find the highest probability 
-
 probability_cache = zeros(Float16, length(house_rentals))
-probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
+@btime probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
+
+
+
 probability_cache'
 
 y = zeros(Float16,length(agent_budgets),length(house_rentals))
@@ -97,6 +98,9 @@ y_d = CUDA.CuArray(house_rentals)
 budget = agent_budgets[1]
 numblocks = ceil(Int, N/256)
 @sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+
+@btime @sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+
 
 z_d
 
