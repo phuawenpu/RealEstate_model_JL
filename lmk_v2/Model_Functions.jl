@@ -11,34 +11,21 @@ function house_price(income ,income_low, base_unitprice, price_coeff)
 end
 
 #custom kernel function for price-budget probabilities
-function rent_probability_GPU(result, budget, price, price_spread)
+function rent_probability_GPU(result_vector, budget, price_vector, price_spread)
     index_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     stride_x = gridDim().x * blockDim().x
 
-    for j = index_x:stride_x:size(result)[2]
-        for i = index_x:stride_x:size(result)[1]
-            @inbounds spread = price_spread * budget[i]
-            @inbounds L = Normal(budget[i],spread)
-            @inbounds p_fit = Float32(pdf(L, budget[i]))
-            @inbounds result[i,j] = Float32(pdf(L, price[i]) / p_fit)
-        end
+    for i = index_x:stride_x:length(price_vector)
+        @inbounds spread = price_spread * budget[i]
+        @inbounds L = Normal(budget[i],spread)
+        @inbounds p_fit = Float32(pdf(L, budget[i]))
+        @inbounds result_vector[i] = Float16(pdf(L, price_vector[i]) / p_fit)
+        
     end
     
-    return
-end
+    return nothing
+end #end rent_probability_GPU
 
-
-#cpu version for results TESTING purposes only
-function rent_probability_CPU_v1(budget, price, budget_spread)
-    # all inputs are scalar
-    # using a normal distribution to approximate consumer behaviour
-    # however the hunch is consumer behaviour is more like a skewed distribution
-    # i.e. given the same distance from central price, greater preference for low prices than high prices
-    L = Normal(budget,budget_spread*budget)
-    p_fit = Float32(pdf(L, budget))
-    rent_probability = Float32(pdf(L, price) / p_fit)
-    return Float16(rent_probability)
-end 
 
 #cpu version 
 function rent_probability_CPU(budget, price, budget_spread)
@@ -46,11 +33,16 @@ function rent_probability_CPU(budget, price, budget_spread)
     # using a normal distribution to approximate consumer behaviour
     # however the hunch is consumer behaviour is more like a skewed distribution
     # i.e. given the same distance from central price, greater preference for low prices than high prices
-    L = Normal(budget,budget_spread*budget)
-    p_fit = Float32(pdf(L, budget))
-    rent_probability = Float32(pdf(L, price) / p_fit)
-    return Float16(rent_probability)
-end 
+    if (price > 2 * budget)
+        rent_probability = 0.0
+        return Float16(rent_probability)
+    else
+        L = Normal(budget,budget_spread*budget)
+        p_fit = Float32(pdf(L, budget))
+        rent_probability = Float32(pdf(L, price) / p_fit)
+        return Float16(rent_probability)
+    end
+end #end rent_probability_CPU
 
 
 

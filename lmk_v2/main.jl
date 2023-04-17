@@ -74,7 +74,7 @@ house_rentals = house_list[:,2] #this gives us the house rental prices
 
 probability_cache = zeros(Float16, length(house_rentals))
 probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
-
+probability_cache'
 
 y = zeros(Float16,length(agent_budgets),length(house_rentals))
 for i in eachindex(agent_budgets)
@@ -92,13 +92,11 @@ agent_budgets[4]
 house_rentals[4]
 
 N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
-x_d = CUDA.CuArray(house_rentals)
-y_d = CUDA.CuArray(agent_budgets)
-z_d = CUDA.zeros(Float16,(N,N)) #vector to store range of probabilities given budget to consider
-
+z_d = CUDA.zeros(Float16,N) #vector to store range of probabilities given budget to consider
+y_d = CUDA.CuArray(house_rentals)
+budget = agent_budgets[1]
 numblocks = ceil(Int, N/256)
-
-@cuda blocks=numblocks Model_Functions.rent_probability_GPU(z_d, x_d, y_d,rent_spread)
+@sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
 
 z_d
 
