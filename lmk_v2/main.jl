@@ -6,8 +6,7 @@ interest_rate = 4.7
 # row number of the income dataframe to load
 row_number = 23
 # ratio of the entire state's population to model
-#pop_ratio = 0.00005 
-pop_ratio = 0.05 
+pop_ratio = 0.00001 
 #corrector for rents
 rent_coeff = 1.7
 #base unit price of house
@@ -17,7 +16,7 @@ price_coeff =0.0002
 #spread ratio in rental probability
 rent_spread = 0.2 # 20% variance
 #CUDA vector size control, memory bound:
-cuda_max_vector = 2^19
+cuda_max_vector = 2^20
 
 include("./Load_Income.jl")
 include("./Initialise_Data.jl")
@@ -66,43 +65,26 @@ house_rentals = house_list[:,2] #this gives us the house rental prices
 (length(house_rentals)<2049 && length(agent_budgets)<1025) ? plot(x, [agent_budgets house_rentals], layout=(1,1), label=["housing_expenditure" "rental_ask"], reuse=false) : nothing
 ########## "static" initialisation above ##########
 
-
+#= CPU version =#
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
 house_rentals = house_list[:,2] #this gives us the house rental prices
 #step through each agents' budget, find the highest probability 
 probability_cache = zeros(Float16, length(house_rentals))
-@btime probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
+probability_cache = Model_Functions.rent_probability_CPU.(agent_budgets[1], house_rentals, rent_spread)
+@btime sortperm(probability_cache)[1]
 
-
-
-probability_cache'
-
-y = zeros(Float16,length(agent_budgets),length(house_rentals))
-for i in eachindex(agent_budgets)
-    y[i,:] = Model_Functions.rent_probability_CPU.(agent_budgets[i], house_rentals, rent_spread)
-end
-
-z = sortperm(y[4,:], rev=true)
-z'
-y
-for i in eachindex(z)
-    println(y[z[i]'])
-end
-
-agent_budgets[4]
-house_rentals[4]
 
 N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
 z_d = CUDA.zeros(Float16,N) #vector to store range of probabilities given budget to consider
 y_d = CUDA.CuArray(house_rentals)
 budget = agent_budgets[1]
 numblocks = ceil(Int, N/256)
-@sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+btime @sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
 
-@btime @sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+z_h = Array(z_d)
+@btime sortperm(z_h)[1]
+sortperm(z_h)[1]
 
-
-z_d
 
 z2 = Array(z_d)
 heatmap(z2)

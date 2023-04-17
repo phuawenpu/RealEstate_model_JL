@@ -16,13 +16,16 @@ function rent_probability_GPU(result_vector, budget, price_vector, price_spread)
     stride_x = gridDim().x * blockDim().x
 
     for i = index_x:stride_x:length(price_vector)
-        @inbounds spread = price_spread * budget[i]
-        @inbounds L = Normal(budget[i],spread)
-        @inbounds p_fit = Float32(pdf(L, budget[i]))
-        @inbounds result_vector[i] = Float16(pdf(L, price_vector[i]) / p_fit)
-        
+        @inbounds if (price_vector[i] > 2*budget)
+            result_vector[i]=0
+            continue
+        else
+            @inbounds spread = price_spread * budget
+            @inbounds L = Normal(budget[i],spread)
+            @inbounds p_fit = Float32(pdf(L, budget))
+            @inbounds result_vector[i] = Float16(pdf(L, price_vector[i]) / p_fit)
+        end
     end
-    
     return nothing
 end #end rent_probability_GPU
 
@@ -39,8 +42,8 @@ function rent_probability_CPU(budget, price, budget_spread)
     else
         L = Normal(budget,budget_spread*budget)
         p_fit = Float32(pdf(L, budget))
-        rent_probability = Float32(pdf(L, price) / p_fit)
-        return Float16(rent_probability)
+        rent_probability = Float16(pdf(L, price) / p_fit)
+        return rent_probability
     end
 end #end rent_probability_CPU
 
