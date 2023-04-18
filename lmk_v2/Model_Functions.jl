@@ -68,7 +68,6 @@ end
 function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, max_house_price)
     # rental is simply an assumed 30 year term mortgage + inflation
     house_price_ratio = (max_house_price / house_price) 
-    (house_price_ratio > 4) ? house_price_ratio *= rent_coeff : nothing 
     tenure_corrected = Int32(round((12*30)-house_price_ratio)+1)
     #println("tenure_corrected: ",tenure_corrected, " for house price: ", house_price)
     rental = mortgage_monthly(r=interest_rate, P = house_price, N=tenure_corrected) * (1+inflation_rate/100)
