@@ -87,7 +87,7 @@ for i in eachindex(agent_budgets)
     market_scoreboard[preferred_housing] = budget
     market_scoreboard[N+preferred_housing] = i
 end
-display(market_scoreboard) #yay I worked so hard
+display(market_scoreboard) #maybe I didn't work so hard
 
 
 
