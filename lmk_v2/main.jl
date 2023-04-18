@@ -81,7 +81,7 @@ y_d = CUDA.CuArray(house_rentals)
 market_scoreboard = zeros(Int32, (N,2))
 
 # for i in eachindex(agent_budgets)
-i = 1
+for i in eachindex(agent_budgets)
     budget = agent_budgets[i]
     println("agent_budget_number: ", i)
     println("agent budget is: \$", budget)
@@ -89,7 +89,20 @@ i = 1
     @sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
     z_h = Array(z_d)
     choices = sortperm(z_h, rev=true); println("sortperm for agent", i, " is ", choices')
-    choice_1st = choices[1]; choice_2nd = choices[2]; choice_3rd = choices[3];
+    choices_truncated = collect(choices[1:3]) #only look at top 3 choices
+    market_scoreboard
+    for choice in choices_truncated
+        if house_rentals[choice] <= budget
+            if market_scoreboard[choice] < budget
+                market_scoreboard[choice] = budget
+                market_scoreboard[N+choice]=i
+            end 
+        end
+    end
+    println("After agent ",i, " bid: ")
+    display(market_scoreboard)
+end
+    
     if (house_rentals[choice_1st] <=  budget)
         market_scoreboard[choice_1st] = budget
         market_scoreboard[N+choice_1st] = i
