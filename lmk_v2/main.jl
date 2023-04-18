@@ -14,7 +14,7 @@ const base_unit_price = 50000
 #coefficient for house prices
 const price_coeff =0.0002
 #spread ratio in rental probability
-const rent_spread = 0.2 # 20% variance
+const rent_spread = 0.15 # 20% variance
 #CUDA vector size control, memory bound:
 const cuda_max_vector = 2^20
 
@@ -78,16 +78,37 @@ numblocks = ceil(Int, N/256)
 z_d = CUDA.zeros(Float16,N) 
 y_d = CUDA.CuArray(house_rentals) 
 # scoreboard of bids, first column is bid price, second column is agent_number
-market_scoreboard= zeros(Int32, (N,2))
-for i in eachindex(agent_budgets)
+market_scoreboard = zeros(Int32, (N,2))
+
+# for i in eachindex(agent_budgets)
+i = 1
     budget = agent_budgets[i]
+    println("agent_budget_number: ", i)
+    println("agent budget is: \$", budget)
+
     @sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
     z_h = Array(z_d)
-    preferred_housing = sortperm(z_h)[1]
-    market_scoreboard[preferred_housing] = budget
-    market_scoreboard[N+preferred_housing] = i
-end
-display(market_scoreboard) #maybe I didn't work so hard
+    choices = sortperm(z_h, rev=true); println("sortperm for agent", i, " is ", choices')
+    choice_1st = choices[1]; choice_2nd = choices[2]; choice_3rd = choices[3];
+    if (house_rentals[choice_1st] <=  budget)
+        market_scoreboard[choice_1st] = budget
+        market_scoreboard[N+choice_1st] = i
+    end
+    if (house_rentals[choice_2nd] <=  budget)
+        market_scoreboard[choice_2nd] = budget
+        market_scoreboard[N+choice_2nd] = i
+    end
+    if (house_rentals[choice_3rd] <=  budget)
+        market_scoreboard[choice_3rd] = budget
+        market_scoreboard[N+choice_3rd] = i
+    end
+market_scoreboard
+
+# end
+println("First choices scoreboard")
+display(market_scoreboard_1st) #first of two bids
+println("Second choices scoreboard")
+display(market_scoreboard_2nd) #second of two bids
 
 
 
