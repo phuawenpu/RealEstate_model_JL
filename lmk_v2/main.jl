@@ -1,4 +1,4 @@
-using CUDA, Plots, BenchmarkTools
+using CUDA, Plots
 
 #inflation and mortgage interest in %
 const inflation_rate = 5.5
@@ -49,17 +49,18 @@ house_list,base_unit_price, price_coeff)
 sort!(house_list, dims = 1)
 h_size = size(house_list)[1]
 a_size = size(agent_list)[1]
-max_house_price = house_list[h_size]; println("Max house price: ", max_house_price)
+max_house_price = house_list[h_size]
+println("Max house price: ", max_house_price)
 #rentals initiated here
 Initialise_Data.house_list_rental(house_list, interest_rate, inflation_rate, 
 rent_coeff, max_house_price)
 
-println("Initialised values: ")
-println("\n agent_list has 5 columns ->
-1:monthly income, 2:monthly savings, 3:expenditure, 4:housing_expenditure, 5:accumulated_savings \n")
+println("\nInitialised values: ")
+println("\nagent_list has 5 columns ->
+ 1:monthly income, 2:monthly savings, 3:expenditure, 4:housing_expenditure, 5:accumulated_savings \n")
 display(agent_list)
-println("\n house_list has 3 columns-> 
-1:house price, 2:rental price, 3:last_rent price: \n")
+println("\nhouse_list has 3 columns-> 
+ 1:house price, 2:rental price, 3:last_rent price: \n")
 display(house_list)
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
 house_rentals = house_list[:,2] #this gives us the house rental prices
@@ -71,19 +72,25 @@ end
 ############### "static" initialisation above ###############
 #############################################################
 
-N = length(agent_budgets) #agent_budgets assumed to be same size as house_rentals
+N = length(house_rentals) #agent_budgets assumed to be same size as house_rentals
+numblocks = ceil(Int, N/256)
 #temporary vectors to store range of probabilities given budget and rentals
 z_d = CUDA.zeros(Float16,N) 
 y_d = CUDA.CuArray(house_rentals) 
+# scoreboard of bids, first column is bid price, second column is agent_number
+market_scoreboard= zeros(Int32, (N,2))
+for i in eachindex(agent_budgets)
+    budget = agent_budgets[i]
+    @sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+    z_h = Array(z_d)
+    preferred_housing = sortperm(z_h)[1]
+    market_scoreboard[preferred_housing] = budget
+    market_scoreboard[N+preferred_housing] = i
+end
+display(market_scoreboard) #yay I worked so hard
 
 
-budget = agent_budgets[1]
-numblocks = ceil(Int, N/256)
-@sync @cuda threads = 1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
 
-z_h = Array(z_d)
-@btime sortperm(z_h)[1]
-sortperm(z_h)[1]
 
 
 z2 = Array(z_d)

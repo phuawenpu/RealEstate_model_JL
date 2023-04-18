@@ -11,7 +11,7 @@ function populate_agents(df, row_number, agent_list)
     # on the range within the decile
     # Main.VSCodeServer.vscodedisplay(df)
     sim_samplesize = Int32(round(size(agent_list)[1]/8))
-       
+    println("The year is: ",df[row_number, :"Year"], " in Singapore")   
     index = 1
 
     for i in 1:sim_samplesize #generate the first decile

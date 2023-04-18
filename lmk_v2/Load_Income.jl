@@ -6,6 +6,7 @@ function load_income(filename)
     #load income data in deciles and extrapolate lower and upper bounds 
     mat, head = readdlm(filename, ',', Int32, header=true)
     df = DataFrame(mat, vec(head))
+    
     #extrapolate lower and upper bounds
     df.min_income .= Int32.(df."1st" - round.((df."2nd" - df."1st")/2)) #extrapolate min point of mean income
     df.percentile10 .= Int32.(df."1st") 
