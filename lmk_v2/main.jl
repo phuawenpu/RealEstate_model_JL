@@ -6,7 +6,7 @@ const interest_rate = 4.7
 # row number of the income dataframe to load
 const row_number = 1
 # ratio of the entire state's population to model
-const pop_ratio = 0.00001 
+const pop_ratio = 0.0001 # 0.00001 
 #corrector for rents
 const rent_coeff = 1.7
 #base unit price of house
@@ -90,7 +90,6 @@ for i in eachindex(agent_budgets)
     z_h = Array(z_d)
     choices = sortperm(z_h, rev=true); println("sortperm for agent", i, " is ", choices')
     choices_truncated = collect(choices[1:3]) #only look at top 3 choices
-    market_scoreboard
     for choice in choices_truncated
         if house_rentals[choice] <= budget
             if market_scoreboard[choice] < budget
@@ -102,45 +101,8 @@ for i in eachindex(agent_budgets)
     println("After agent ",i, " bid: ")
     display(market_scoreboard)
 end
-    
-    if (house_rentals[choice_1st] <=  budget)
-        market_scoreboard[choice_1st] = budget
-        market_scoreboard[N+choice_1st] = i
-    end
-    if (house_rentals[choice_2nd] <=  budget)
-        market_scoreboard[choice_2nd] = budget
-        market_scoreboard[N+choice_2nd] = i
-    end
-    if (house_rentals[choice_3rd] <=  budget)
-        market_scoreboard[choice_3rd] = budget
-        market_scoreboard[N+choice_3rd] = i
-    end
-market_scoreboard
 
-# end
-println("First choices scoreboard")
-display(market_scoreboard_1st) #first of two bids
-println("Second choices scoreboard")
-display(market_scoreboard_2nd) #second of two bids
+size(market_scoreboard)
 
-
-
-
-
-z2 = Array(z_d)
-heatmap(z2)
-display(z_d)
-
-
-i = rand(1:length(x_d))
-x_d[i]
-y_d[i]
-println("gpu answer is: ", z_d[i])
-cpu_answer = Model_Functions.rent_probability_CPU(x_d[i], y_d[i],0.1)
-println("cpu answer is: ", cpu_answer)
-
-
-z_h = Array(z_d)
-backend(:plotly)
-p=heatmap(z)
-p=heatmap(z_h)
+using DelimitedFiles
+writedlm("scoreboard.csv", market_scoreboard, ", \t")
