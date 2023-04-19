@@ -40,17 +40,14 @@ function rent_probability_CPU(budget, price, budget_spread)
     # i.e. given the same distance from central price, greater preference for low prices than high prices
     #=if (price > 2 * budget)
         rent_probability = 0.0
-        return Float16(rent_probability)
+        return Float32(rent_probability)
     else=# ##optimisation for over-budget not used
         L = Normal(budget,budget_spread*budget)
         p_fit = Float32(pdf(L, budget))
-        rent_probability = Float16(pdf(L, price) / p_fit)
+        rent_probability = Float32(pdf(L, price) / p_fit)
         return rent_probability
     #end ##optimisation for low probability removed
 end #end rent_probability_CPU
-
-
-
 
 #monthly mortgage payment given ANNUAL % interest rate, principal owed, 
 # term i.e. number of repayment months
@@ -65,8 +62,7 @@ function mortgage_monthly(;r, P, N)
     end
 end
 
-
-# rent price estimator is based on mortgage
+#rent price estimator is based on mortgage
 function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, max_house_price)
     # rental is simply an assumed 30 year term mortgage + inflation
     house_price_ratio = (max_house_price / house_price) 
@@ -76,6 +72,9 @@ function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, 
     # println(house_price, " rental is: ", Int32(round(rental)))
     return Int64(round(rental))
 end
+
+
+
 
 
 export house_price, rent_probability_CPU ,rent_probability_GPU, mortgage_monthly, rental_monthly
