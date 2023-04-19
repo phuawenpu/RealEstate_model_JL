@@ -119,10 +119,8 @@ Threads.@threads for i in eachindex(agent_budgets)
     end
 end #end of choice loop
 
-vscodedisplay(market_scoreboard)
-vscodedisplay(house_list)
-#allocate the house rentals
-map(n->n*, market_scoreboard[:,3])
+#allocate the house rentals market prices from the scoreboard
+house_rentals = Model_Functions.allocate_market_rental.(house_list[:,3],market_scoreboard[:,1])
 
 
 if (length(house_rentals)<4000 && length(agent_budgets)<2000)
@@ -134,5 +132,5 @@ end
 filename = "score_" * string(SIM_LOOP) * ".csv"
 writedlm(filename, market_scoreboard, ",")
 vscodedisplay(market_scoreboard)
-vscodedisplay(house_rentals)
+vscodedisplay(house_list)
 SIM_LOOP += 1
