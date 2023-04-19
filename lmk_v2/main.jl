@@ -120,7 +120,8 @@ Threads.@threads for i in eachindex(agent_budgets)
 end #end of choice loop
 
 #allocate the house rentals market prices from the scoreboard
-house_rentals = Model_Functions.allocate_market_rental.(house_list[:,3],market_scoreboard[:,1])
+#house_rentals = Model_Functions.allocate_market_rental.(house_list[:,3],market_scoreboard[:,1])
+k = map((x,y)-> (x!=0) ? x : y, market_scoreboard[:,1], house_rentals)
 
 
 if (length(house_rentals)<4000 && length(agent_budgets)<2000)

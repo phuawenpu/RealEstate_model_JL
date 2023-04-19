@@ -73,7 +73,7 @@ function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, 
     return Int64(round(rental))
 end #end rental_monthly
 
-#this has to run after new tenants are allocated!
+
 function allocate_market_rental(current_rental,current_tenant, market_scoreboard)
     if current_tenant == 0 
         return market_scoreboard
