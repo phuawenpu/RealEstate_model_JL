@@ -1,7 +1,9 @@
 #this is where all the prices, mortgages, rents etc.. are determined
 module Model_Functions
 
-using CUDA, Distributions
+using CUDA, Distributions,Random
+
+Random.seed!(123)
 
 #price houses based on input household monthly income
 function house_price(income ,income_low, base_unitprice, price_coeff)

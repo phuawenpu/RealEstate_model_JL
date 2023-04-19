@@ -1,4 +1,4 @@
-using CUDA, Plots, DelimitedFiles, BenchmarkTools
+using CUDA, Plots, DelimitedFiles, BenchmarkTools, DataFrames
 
 #inflation and mortgage interest in %
 const inflation_rate = 5.5
@@ -6,7 +6,7 @@ const interest_rate = 4.7
 # row number of the income dataframe to load
 const row_number = 1
 # ratio of the entire state's population to model
-const pop_ratio = 0.00001 
+const pop_ratio = 0.0001 
 #corrector for rents
 const rent_coeff = 1.7
 #base unit price of house
@@ -19,7 +19,7 @@ const rent_spread = 0.15 # 20% variance
 const cuda_max_vector = 2^20
 #market visibility: what portion of the market can house sellers
 #"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
-market_visibility = 0.05
+market_visibility = 0.2
 #sim loop number
 SIM_LOOP = 1
 
@@ -123,23 +123,18 @@ Threads.@threads for i in eachindex(agent_budgets)
     #println("After agent ",i, " bid: ")
     #display(market_scoreboard)
 end #end of choice loop
-
+vscodedisplay(market_scoreboard)
 #update the market rents
 size(market_scoreboard)
-inc = 0
-for i in 1: size(market_scoreboard)[1]
-    if market_scoreboard[N+i] != 0
-        println(market_scoreboard[N+i])
-        inc+=1
-    end
-end
-inc
+
 
 if (length(house_rentals)<2049 && length(agent_budgets)<1025)
     plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
     label=["housing_expenditure" "rental_ask"], reuse=false) 
 end
 
+
 filename = "score_" * string(SIM_LOOP) * ".csv"
-writedlm(filename, market_scoreboard, ", \t\t")
+writedlm(filename, market_scoreboard, ", \t")
+vscodedisplay(market_scoreboard)
 SIM_LOOP += 1
