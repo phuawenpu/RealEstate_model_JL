@@ -1,4 +1,4 @@
-using CUDA, Plots
+using CUDA, Plots, DelimitedFiles
 
 #inflation and mortgage interest in %
 const inflation_rate = 5.5
@@ -6,7 +6,7 @@ const interest_rate = 4.7
 # row number of the income dataframe to load
 const row_number = 1
 # ratio of the entire state's population to model
-const pop_ratio = 0.0001 # 0.00001 
+const pop_ratio = 0.00001 
 #corrector for rents
 const rent_coeff = 1.7
 #base unit price of house
@@ -17,6 +17,11 @@ const price_coeff =0.0002
 const rent_spread = 0.15 # 20% variance
 #CUDA vector size control, memory bound:
 const cuda_max_vector = 2^20
+#market visibility: what portion of the market can house sellers
+#"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
+const market_visibility = 0.01
+#sim loop number
+SIM_LOOP = 1
 
 include("./Load_Income.jl")
 include("./Initialise_Data.jl")
@@ -69,27 +74,35 @@ if (length(house_rentals)<2049 && length(agent_budgets)<1025)
     plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
     label=["housing_expenditure" "rental_ask"], reuse=false) 
 end
-############### "static" initialisation above ###############
-#############################################################
 
 N = length(house_rentals) #agent_budgets assumed to be same size as house_rentals
+frac_N = Int32(floor(N*market_visibility))
+
+#= CUDA probability function
 numblocks = ceil(Int, N/256)
 #temporary vectors to store range of probabilities given budget and rentals
 z_d = CUDA.zeros(Float16,N) 
 y_d = CUDA.CuArray(house_rentals) 
+=#
+z_h = zeros(Float16,N)
+y_h = house_rentals
 # scoreboard of bids, first column is bid price, second column is agent_number
-market_scoreboard = zeros(Int32, (N,2))
+market_scoreboard = zeros(Int32, (N,3))
+############### "static" initialisation above ###############
+#############################################################
 
-# for i in eachindex(agent_budgets)
-for i in eachindex(agent_budgets)
+Threads.@threads for i in eachindex(agent_budgets)
     budget = agent_budgets[i]
-    println("agent_budget_number: ", i)
-    println("agent budget is: \$", budget)
-
-    @sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
-    z_h = Array(z_d)
+    # println("agent_budget_number: ", i)
+    # println("agent budget is: \$", budget)
+    z_h = Model_Functions.rent_probability_CPU.(budget,y_h,rent_spread)
+    println(z_h)
+    #@sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
+    #z_h = Array(z_d)
     choices = sortperm(z_h, rev=true); println("sortperm for agent", i, " is ", choices')
     choices_truncated = collect(choices[1:3]) #only look at top 3 choices
+    choices_others = collect(choices[4:frac_N]) #look at some of the rest of the choices
+    #this first for loop gives us the bona fide buyers, whose top 3 choices fit their budget
     for choice in choices_truncated
         if house_rentals[choice] <= budget
             if market_scoreboard[choice] < budget
@@ -97,12 +110,34 @@ for i in eachindex(agent_budgets)
                 market_scoreboard[N+choice]=i
             end 
         end
+    end 
+    #this second for loop gives us the other choices considered, so the housing sellers can 'learn' prices
+    for choice in choices_others
+        if budget >= market_scoreboard[choice]
+            market_scoreboard[2N+choice] = budget
+        end
     end
-    println("After agent ",i, " bid: ")
-    display(market_scoreboard)
+
+    #println("After agent ",i, " bid: ")
+    #display(market_scoreboard)
+end #end of choice loop
+
+#update the market rents
+size(market_scoreboard)
+inc = 0
+for i in 1: size(market_scoreboard)[1]
+    if market_scoreboard[N+i] != 0
+        println(market_scoreboard[N+i])
+        inc+=1
+    end
+end
+inc
+
+if (length(house_rentals)<2049 && length(agent_budgets)<1025)
+    plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
+    label=["housing_expenditure" "rental_ask"], reuse=false) 
 end
 
-size(market_scoreboard)
-
-using DelimitedFiles
-writedlm("scoreboard.csv", market_scoreboard, ", \t")
+filename = "score_" * string(SIM_LOOP) * ".csv"
+writedlm(filename, market_scoreboard, ", \t\t")
+SIM_LOOP += 1

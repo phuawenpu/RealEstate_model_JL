@@ -36,15 +36,15 @@ function rent_probability_CPU(budget, price, budget_spread)
     # using a normal distribution to approximate consumer behaviour
     # however the hunch is consumer behaviour is more like a skewed distribution
     # i.e. given the same distance from central price, greater preference for low prices than high prices
-    if (price > 2 * budget)
+    #=if (price > 2 * budget)
         rent_probability = 0.0
         return Float16(rent_probability)
-    else
+    else=# ##optimisation for low probability removed
         L = Normal(budget,budget_spread*budget)
         p_fit = Float32(pdf(L, budget))
         rent_probability = Float16(pdf(L, price) / p_fit)
         return rent_probability
-    end
+    #end ##optimisation for low probability removed
 end #end rent_probability_CPU
 
 
