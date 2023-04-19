@@ -39,7 +39,7 @@ function rent_probability_CPU(budget, price, budget_spread)
     #=if (price > 2 * budget)
         rent_probability = 0.0
         return Float16(rent_probability)
-    else=# ##optimisation for low probability removed
+    else=# ##optimisation for over-budget not used
         L = Normal(budget,budget_spread*budget)
         p_fit = Float32(pdf(L, budget))
         rent_probability = Float16(pdf(L, price) / p_fit)

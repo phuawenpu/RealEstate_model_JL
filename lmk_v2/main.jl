@@ -1,4 +1,4 @@
-using CUDA, Plots, DelimitedFiles
+using CUDA, Plots, DelimitedFiles, BenchmarkTools
 
 #inflation and mortgage interest in %
 const inflation_rate = 5.5
@@ -19,7 +19,7 @@ const rent_spread = 0.15 # 20% variance
 const cuda_max_vector = 2^20
 #market visibility: what portion of the market can house sellers
 #"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
-const market_visibility = 0.01
+market_visibility = 0.05
 #sim loop number
 SIM_LOOP = 1
 
@@ -96,10 +96,12 @@ Threads.@threads for i in eachindex(agent_budgets)
     # println("agent_budget_number: ", i)
     # println("agent budget is: \$", budget)
     z_h = Model_Functions.rent_probability_CPU.(budget,y_h,rent_spread)
-    println(z_h)
+    #println(z_h)
+    
+    #turning off CUDA until there is a way to start CUDA functions in parallel processes
     #@sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
     #z_h = Array(z_d)
-    choices = sortperm(z_h, rev=true); println("sortperm for agent", i, " is ", choices')
+    choices = sortperm(z_h, rev=true); # println("sortperm for agent", i, " is ", choices')
     choices_truncated = collect(choices[1:3]) #only look at top 3 choices
     choices_others = collect(choices[4:frac_N]) #look at some of the rest of the choices
     #this first for loop gives us the bona fide buyers, whose top 3 choices fit their budget
