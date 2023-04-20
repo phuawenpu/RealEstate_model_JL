@@ -18,6 +18,7 @@ const price_coeff =0.0002
 const rent_spread = 0.2 # this is variance of the probability func.
 #CUDA vector size control, memory bound:
 const cuda_max_vector = 2^20
+const tenure_typical = 6 #6 months being the typical tenure
 #market visibility: what portion of the market can house sellers
 #"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
 market_visibility = 0.19
@@ -69,36 +70,41 @@ println("\nhouse_list has 3 columns->
  1:house price, 2:rental price, 3:rented_by \n")
 display(house_list)
 agent_budgets = agent_list[:,4] #this gives us the agents' rental agent_budgets
+agent_budgets = hcat(agent_budgets,zeros(Int32,length(agent_budgets))) #append a column of zeros as rental tenure
 house_rentals = house_list[:,2] #this gives us the house rental prices
+house_rentals = hcat(house_rentals,zeros(Int32,length(house_rentals))) #append a column of zeros as agent tenant identities
+
+N = size(house_rentals)[1] #agent_budgets assumed to be same size as house_rentals
+visible_N = Int32(floor(N*market_visibility))
+# first plot of rental prices against agent budgets
 # run plot only for small number of households (e.g. < 1000)
-if (length(house_rentals)<2049 && length(agent_budgets)<1025)
-    plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
-    label=["housing_expenditure" "rental_ask"], reuse=false) 
+if (N<4000)
+    plot(collect(1:a_size), [agent_budgets[:,1] house_rentals[:,1]], layout=(1,1), 
+    label=["housing_expenditure_initial" "rental_ask_initial"], reuse=false, size = (800,800)) 
 end
 
-N = length(house_rentals) #agent_budgets assumed to be same size as house_rentals
-visible_N = Int32(floor(N*market_visibility))
-
-#= CUDA probability function
+#= setup for CUDA probability function
 numblocks = ceil(Int, N/256)
 #temporary vectors to store range of probabilities given budget and rentals
 z_d = CUDA.zeros(Float16,N) 
 y_d = CUDA.CuArray(house_rentals) 
 =#
+
+########## "static" initialisation above ##########
+# reason for renaming to z_h z_d is because of CUDA / non CUDA code
 z_h = zeros(Float32,N)
-y_h = house_rentals
+y_h = house_rentals[:,1]
 # scoreboard of bids, first column is bid price, second column is agent_number
 market_scoreboard = zeros(Int32, (N,3))
-
-if (length(house_rentals)<4000 && length(agent_budgets)<2000)
-    plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
-    label=["housing_expenditure" "rental_ask"], reuse=false, size = (650,650)) 
-end
-############### "static" initialisation above ###############
+vscodedisplay(agent_budgets)
+vscodedisplay(house_rentals)
 
 #only agent_budgets and house_rentals are dynamic variables from here onwards
+
+# first critical decision loop, for each agent, discover their price preference,
+# sort the preferences, top 2 preferred housings receives the highest bid
 #multithreading isn't fair if richer bid ahead of poorer, but so is real life
-Threads.@threads for i in eachindex(agent_budgets) 
+Threads.@threads for i in eachindex(agent_budgets[:,1]) 
     budget = agent_budgets[i]
     # println("agent_budget_number: ", i); println("agent budget is: \$", budget)
     z_h = Model_Functions.rent_probability_CPU.(budget,y_h,rent_spread)
@@ -118,36 +124,52 @@ Threads.@threads for i in eachindex(agent_budgets)
         end
     end 
     #this second for loop gives us the other choices considered, so the scoreboard can 'learn' prices
+    #the scoreboard third column of "learned" prices varies with market visibility etc.
     for choice in choices_others
         if budget >= market_scoreboard[choice]
             market_scoreboard[2N+choice] = budget
         end
     end
 end #end of choice loop
+#vscodedisplay(market_scoreboard)
 
-
-k1 = map((x,y)-> (x!=0) ? y : 0, market_scoreboard[:,1], house_rentals)
-vscodedisplay(k1)
+#old market mean for info
+println("Previous mean rental: \$", Int32(round(sum(house_rentals[:,1])/N)))
+#k1 is to capture all the housing which has willing bidders
+k1 = map((x,y)-> (x!=0) ? y : 0, market_scoreboard[:,1], house_rentals[:,1])
 size_k1 = sum( map((x)->(x!=0) ? 1 : 0, k1) )
+#and using k1 to re-calculate the realistic market mean bid price
 new_market_mean = Int32(round(sum(k1)/size_k1))
+println("New mean of allocated market: \$", new_market_mean)
 
+#allocate the bidders their housing
+last_bidder = 0
+for i in eachindex(market_scoreboard[:,2])
+    a_index = N+i
+    bidder = market_scoreboard[a_index]
+    if bidder!=0 && bidder==last_bidder
+        continue
+    else
+        if bidder!=0
+            house_rentals[a_index] = bidder #allocate the bidder to the rental
+            house_rentals[i] = market_scoreboard[i]
+            tenure = agent_budgets[a_index] #read the tenure from the agent_budget record, if it is 0, reset it
+            (tenure==0) ? agent_budgets[a_index] = tenure_typical : agent_budgets[a_index] = tenure - 1
+        end
+    end
+    last_bidder = bidder
+end
 
+vscodedisplay(house_rentals)
+vscodedisplay(agent_budgets)
+#account for homeless (who or how many or both?)
+#adjust the rental prices across town
 
-k = map((x,y)-> (x!=0) ? x : y, market_scoreboard[:,1], house_rentals)
-vscodedisplay(k)
-sum_of_prices = sum(k); Int32(round(sum_of_prices/length(k)))
- 
-
-house_rentals = k
-if (length(house_rentals)<4000 && length(agent_budgets)<2000)
-    plot!(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
-    label=["housing_expenditure" "rental_ask"],size = (650,650)) 
+if (N<4000) # run plot only for small number of households (e.g. < 1000)
+    plot!(collect(1:a_size), [agent_budgets[:,1] house_rentals[:,1]], layout=(1,1), 
+    label=["housing_expenditure" "rental_ask"], reuse=true, size = (800,800)) 
 end
 
 
-#filename = "score_" * string(SIM_LOOP) * ".csv"
-#writedlm(filename, market_scoreboard, ",")
-vscodedisplay(market_scoreboard)
-#vscodedisplay(agent_budgets)
-#vscodedisplay(house_list)
+filename = "score_" * string(SIM_LOOP) * ".csv"
 SIM_LOOP += 1
