@@ -1,7 +1,8 @@
 #this is where all the prices, mortgages, rents etc.. are determined
 module Model_Functions
 
-using CUDA, Distributions,Random
+#using CUDA
+using Distributions,Random
 
 Random.seed!(123)
 
@@ -74,16 +75,9 @@ function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, 
 end #end rental_monthly
 
 
-function allocate_market_rental(current_rental,current_tenant, market_scoreboard)
-    if current_tenant == 0 
-        return market_scoreboard
-    else
-        return current_tenant
-    end
-end #end allocate_rental
 
 
 
-export house_price, rent_probability_CPU ,rent_probability_GPU, mortgage_monthly, rental_monthly, allocate_market_rental
+export house_price, rent_probability_CPU ,rent_probability_GPU, mortgage_monthly, rental_monthly
 
 end #end module

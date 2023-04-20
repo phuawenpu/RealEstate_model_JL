@@ -1,4 +1,5 @@
-using CUDA, Plots, DelimitedFiles, BenchmarkTools
+#using CUDA
+using Plots, DelimitedFiles, BenchmarkTools
 
 #inflation and mortgage interest in %
 inflation_rate = 5.5
@@ -19,7 +20,7 @@ const rent_spread = 0.2 # this is variance of the probability func.
 const cuda_max_vector = 2^20
 #market visibility: what portion of the market can house sellers
 #"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
-market_visibility = 0.07
+market_visibility = 0.19
 #sim loop number
 SIM_LOOP = 1
 
@@ -88,6 +89,11 @@ z_h = zeros(Float32,N)
 y_h = house_rentals
 # scoreboard of bids, first column is bid price, second column is agent_number
 market_scoreboard = zeros(Int32, (N,3))
+
+if (length(house_rentals)<4000 && length(agent_budgets)<2000)
+    plot(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
+    label=["housing_expenditure" "rental_ask"], reuse=false, size = (650,650)) 
+end
 ############### "static" initialisation above ###############
 
 #only agent_budgets and house_rentals are dynamic variables from here onwards
@@ -100,9 +106,9 @@ Threads.@threads for i in eachindex(agent_budgets)
     #@sync @cuda threads=1024 blocks=numblocks Model_Functions.rent_probability_GPU(z_d, budget, y_d,rent_spread)
     #z_h = Array(z_d)
     choices = sortperm(z_h, rev=true); # println("sortperm for agent", i, " is ", choices')
-    choices_truncated = collect(choices[1:3]) #only look at top 3 choices
-    choices_others = collect(choices[4:visible_N]) #look at some of the rest of the choices
-    #this first for loop gives us the bona fide buyers, whose top 3 choices fit their budget
+    choices_truncated = collect(choices[1:2]) #only look at top 3 choices
+    choices_others = collect(choices[3:visible_N]) #look at some of the rest of the choices
+    #this first for loop gives us the bona fide buyers, whose top 2 choices fit their budget
     for choice in choices_truncated
         if house_rentals[choice] <= budget
             if market_scoreboard[choice] < budget
@@ -111,7 +117,7 @@ Threads.@threads for i in eachindex(agent_budgets)
             end 
         end
     end 
-    #this second for loop gives us the other choices considered, so the housing sellers can 'learn' prices
+    #this second for loop gives us the other choices considered, so the scoreboard can 'learn' prices
     for choice in choices_others
         if budget >= market_scoreboard[choice]
             market_scoreboard[2N+choice] = budget
@@ -119,19 +125,29 @@ Threads.@threads for i in eachindex(agent_budgets)
     end
 end #end of choice loop
 
-#allocate the house rentals market prices from the scoreboard
-#house_rentals = Model_Functions.allocate_market_rental.(house_list[:,3],market_scoreboard[:,1])
+
+k1 = map((x,y)-> (x!=0) ? y : 0, market_scoreboard[:,1], house_rentals)
+vscodedisplay(k1)
+size_k1 = sum( map((x)->(x!=0) ? 1 : 0, k1) )
+new_market_mean = Int32(round(sum(k1)/size_k1))
+
+
+
 k = map((x,y)-> (x!=0) ? x : y, market_scoreboard[:,1], house_rentals)
+vscodedisplay(k)
+sum_of_prices = sum(k); Int32(round(sum_of_prices/length(k)))
+ 
 
-
+house_rentals = k
 if (length(house_rentals)<4000 && length(agent_budgets)<2000)
     plot!(collect(1:a_size), [agent_budgets house_rentals], layout=(1,1), 
-    label=["housing_expenditure" "rental_ask"]) 
+    label=["housing_expenditure" "rental_ask"],size = (650,650)) 
 end
 
 
-filename = "score_" * string(SIM_LOOP) * ".csv"
-writedlm(filename, market_scoreboard, ",")
+#filename = "score_" * string(SIM_LOOP) * ".csv"
+#writedlm(filename, market_scoreboard, ",")
 vscodedisplay(market_scoreboard)
-vscodedisplay(house_list)
+#vscodedisplay(agent_budgets)
+#vscodedisplay(house_list)
 SIM_LOOP += 1
