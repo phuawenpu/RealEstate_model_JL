@@ -1,5 +1,8 @@
 #using CUDA
-using Plots, DelimitedFiles, BenchmarkTools
+using Plots, BenchmarkTools
+include("./Load_Income.jl")
+include("./Initialise_Data.jl")
+include("./Model_Functions.jl")
 
 #inflation and mortgage interest in %
 inflation_rate = 5.5
@@ -22,12 +25,8 @@ const tenure_typical = 6 #6 months being the typical tenure
 #market visibility: what portion of the market can house sellers
 #"see" in prices, numbers above 20% will likely bias scoreboard to richer buyers 
 market_visibility = 0.19
-#sim loop number
-SIM_LOOP = 1
 
-include("./Load_Income.jl")
-include("./Initialise_Data.jl")
-include("./Model_Functions.jl")
+
 # income data from singstat public database year 2022 -> row 1, year 2000 -> 23
 income_df = Load_Income.load_income("./income.csv")
 num_households = income_df[row_number,:"Number_Households"]
@@ -89,6 +88,12 @@ numblocks = ceil(Int, N/256)
 z_d = CUDA.zeros(Float16,N) 
 y_d = CUDA.CuArray(house_rentals) 
 =#
+datadump = Any[] #for saving of each loop data
+
+#sim loop number
+SIM_LOOP = 1
+
+anim = @animate for i in 1:10
 
 ########## "static" initialisation above ##########
 # reason for renaming to z_h z_d is because of CUDA / non CUDA code
@@ -96,8 +101,8 @@ z_h = zeros(Float32,N)
 y_h = house_rentals[:,1]
 # scoreboard of bids, first column is bid price, second column is agent_number
 market_scoreboard = zeros(Int32, (N,3))
-vscodedisplay(agent_budgets)
-vscodedisplay(house_rentals)
+#Model_Functions.saveCSV("budgets_initialisation.csv",agent_budgets)
+#Model_Functions.saveCSV("house_rentals_initialisation.csv",house_rentals)
 
 #only agent_budgets and house_rentals are dynamic variables from here onwards
 
@@ -131,7 +136,8 @@ Threads.@threads for i in eachindex(agent_budgets[:,1])
         end
     end
 end #end of choice loop
-#vscodedisplay(market_scoreboard)
+
+#Model_Functions.saveCSV("market_scoreboard_FIRSTRUN.csv",market_scoreboard)
 
 #old market mean for info
 println("Previous mean rental: \$", Int32(round(sum(house_rentals[:,1])/N)))
@@ -160,9 +166,28 @@ for i in eachindex(market_scoreboard[:,2])
     last_bidder = bidder
 end
 
-vscodedisplay(house_rentals)
-vscodedisplay(agent_budgets)
+#Model_Functions.saveCSV("house_rentals_FIRSTRUN.csv",house_rentals)
+#Model_Functions.saveCSV("agent_budgets_FIRSTRUN.csv",agent_budgets)
 #account for homeless (who or how many or both?)
+
+for i in eachindex(agent_budgets[:,1])
+    a_index = N+i
+    budget = agent_budgets[i] 
+    if agent_budgets[a_index] == 0
+        if (budget > new_market_mean)
+            println("agent_budget used to be", agent_budgets[i])
+            println("to be reduced")
+            adjustment = rand(-15:0.5:0)/100 * budget #reduce somewhere up to 15% lower 
+        else
+            adjustment = rand(0:0.5:15)/100 * budget #else increase up to 15%
+        end
+        budget += adjustment; 
+        agent_budgets[i] = Int32(round(budget))
+    end
+end
+#vscodedisplay(agent_budgets) ##
+
+
 #adjust the rental prices across town
 
 if (N<4000) # run plot only for small number of households (e.g. < 1000)
@@ -170,6 +195,10 @@ if (N<4000) # run plot only for small number of households (e.g. < 1000)
     label=["housing_expenditure" "rental_ask"], reuse=true, size = (800,800)) 
 end
 
+datadump = hcat(house_rentals,agent_budgets)
+#filename = "market_" * string(SIM_LOOP) * ".csv"
+#Model_Functions.saveCSV(filename, datadump)
 
-filename = "score_" * string(SIM_LOOP) * ".csv"
-SIM_LOOP += 1
+end
+
+gif(anim, "gameofrent.gif"; fps = 5)

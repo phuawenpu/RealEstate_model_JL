@@ -2,7 +2,7 @@
 module Model_Functions
 
 #using CUDA
-using Distributions,Random
+using Distributions,Random, DelimitedFiles
 
 Random.seed!(123)
 
@@ -31,7 +31,6 @@ function rent_probability_GPU(result_vector, budget, price_vector, price_spread)
     end
     return nothing
 end #end rent_probability_GPU
-
 
 #cpu version 
 function rent_probability_CPU(budget, price, budget_spread)
@@ -74,10 +73,10 @@ function rental_monthly(house_price, interest_rate, inflation_rate, rent_coeff, 
     return Int64(round(rental))
 end #end rental_monthly
 
+function saveCSV(filename, data)
+    writedlm(filename, data, ",")
+end
 
-
-
-
-export house_price, rent_probability_CPU ,rent_probability_GPU, mortgage_monthly, rental_monthly
+export house_price, rent_probability_CPU ,rent_probability_GPU, mortgage_monthly, rental_monthly, saveCSV
 
 end #end module
