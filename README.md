@@ -2,10 +2,10 @@
 Learning Julia for HPC:
 
 Using a case study of statistical income data
-to generate a (work-in-progress) dynamic model
-of house rental prices and household budgets.
+to generate a dynamic model of a market 
+for house rental prices and household budgets.
 
-Jupyter notebook version is under ipynb_ver/.
+Jupyter notebook version is under jl_ver/ipynb_ver/.
 Open main.ipynb to run
 
 Normal julia version runs from julia prompt
